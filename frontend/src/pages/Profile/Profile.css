@@ -101,7 +101,6 @@
   margin-top: 1rem;
 }
 
-/* Tablet styles */
 @media (min-width: 768px) and (max-width: 1023px) {
   .profile-page {
     margin: 1.5rem auto;
@@ -123,7 +122,6 @@
   }
 }
 
-/* Mobile styles */
 @media (max-width: 767px) {
   .profile-page {
     margin: 1rem;

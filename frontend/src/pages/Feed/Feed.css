@@ -28,7 +28,6 @@
   padding: 1rem;
 }
 
-/* Tablet styles */
 @media (min-width: 768px) and (max-width: 1023px) {
   .feed__status {
     width: 35rem;
@@ -40,7 +39,6 @@
   }
 }
 
-/* Desktop styles */
 @media (min-width: 1024px) {
   .feed__status {
     width: 30rem;
@@ -52,7 +50,6 @@
   }
 }
 
-/* Mobile styles */
 @media (max-width: 767px) {
   .feed__status {
     width: 100%;

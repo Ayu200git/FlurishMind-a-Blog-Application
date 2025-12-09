@@ -126,8 +126,6 @@ const Profile = ({ token, currentUserId }) => {
 
     try {
       let avatarUrl = user?.avatar || '';
-
-      // Upload avatar if a new file was selected
       if (avatarFile) {
         const formData = new FormData();
         formData.append('image', avatarFile);

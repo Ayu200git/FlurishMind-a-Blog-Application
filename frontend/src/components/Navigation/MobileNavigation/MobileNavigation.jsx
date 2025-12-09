@@ -2,7 +2,6 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import './MobileNavigation.css';
 
-// NavigationItems component inside this file
 const NavigationItems = ({ isAuth, onChoose, onLogout, onNewPost, onEdit }) => {
   const navItems = [
     { id: 'feed', text: 'Feed', link: '/', auth: true },

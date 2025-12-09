@@ -20,17 +20,14 @@
   transition: all 0.3s ease;
 }
 
-/* Light theme: toolbar is dark purple, so bars should be white */
 :root .mobile-toggle__bar {
   background: #ffffff;
 }
 
-/* Dark theme: toolbar is yellow, so bars should be dark */
 [data-theme="dark"] .mobile-toggle__bar {
   background: #1a1a1a;
 }
 
-/* Tablet and Mobile: Same hamburger size for consistency */
 @media (min-width: 768px) and (max-width: 1023px) {
   .mobile-toggle {
     width: 2.5rem;
@@ -43,7 +40,6 @@
   }
 }
 
-/* Mobile adjustments */
 @media (max-width: 767px) {
   .mobile-toggle {
     width: 2.5rem;
@@ -56,7 +52,6 @@
   }
 }
 
-/* Hide hamburger on desktop */
 @media (min-width: 1024px) {
   .mobile-toggle {
     display: none;

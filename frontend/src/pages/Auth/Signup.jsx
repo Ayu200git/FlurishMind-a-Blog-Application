@@ -45,7 +45,7 @@ const Signup = ({ onSignup, loading }) => {
       name: signupForm.name.value,
       password: signupForm.password.value
     };
-    onSignup(e, formData); // send only values
+    onSignup(e, formData);
   };
 
   return (

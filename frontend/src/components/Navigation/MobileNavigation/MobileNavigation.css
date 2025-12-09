@@ -81,21 +81,18 @@
   z-index: 199;
 }
 
-/* Mobile and Tablet: Show sidebar */
 @media (max-width: 1023px) {
   .mobile-nav {
     display: block;
   }
 }
 
-/* Desktop: Hide sidebar */
 @media (min-width: 1024px) {
   .mobile-nav {
     display: none !important;
   }
 }
 
-/* Tablet and Mobile: Same styling for consistency */
 @media (min-width: 768px) and (max-width: 1023px) {
   .mobile-nav {
     width: 30rem;
@@ -104,7 +101,6 @@
   }
 }
 
-/* Mobile specific styles */
 @media (max-width: 767px) {
   .mobile-nav {
     width: 30rem;
@@ -113,7 +109,6 @@
   }
 }
 
-/* Small mobile */
 @media (max-width: 480px) {
   .mobile-nav {
     width: 100%;
