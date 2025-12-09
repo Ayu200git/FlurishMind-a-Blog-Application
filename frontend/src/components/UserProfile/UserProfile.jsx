@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Avatar from '../Image/Avatar';
 import Loader from '../Loader/Loader';
 import './UserProfile.css';
 
-const UserProfile = ({ token, userId }) => {
+const UserProfile = ({ token, userId, onLogout }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
@@ -19,8 +21,11 @@ const UserProfile = ({ token, userId }) => {
             user {
               _id
               name
+              username
               email
               status
+              role
+              avatar
             }
           }
         `,
@@ -79,18 +84,62 @@ const UserProfile = ({ token, userId }) => {
         </div>
       </button>
       {showProfile && (
-        <div className="user-profile__dropdown">
-          <div className="user-profile__header">
-            <div className="user-profile__avatar-large">
-              {initials}
+        <>
+          <div className="user-profile__backdrop" onClick={() => setShowProfile(false)} />
+          <div className="user-profile__dropdown">
+            <div className="user-profile__header">
+              <div className="user-profile__avatar-large">
+                {user.avatar ? (
+                  <img src={user.avatar.startsWith('http') ? user.avatar : `http://localhost:8080/${user.avatar}`} alt={user.name} />
+                ) : (
+                  initials
+                )}
+              </div>
+              <h3>{user.name}</h3>
+              {user.username && <p className="user-profile__username">@{user.username}</p>}
             </div>
-            <h3>{user.name}</h3>
-            <p className="user-profile__email">{user.email}</p>
-            {user.status && (
-              <p className="user-profile__status">{user.status}</p>
-            )}
+            <div className="user-profile__menu">
+              <button 
+                className="user-profile__menu-item"
+                onClick={() => {
+                  navigate(`/profile/${userId}`);
+                  setShowProfile(false);
+                }}
+              >
+                View Profile
+              </button>
+              <button 
+                className="user-profile__menu-item"
+                onClick={() => {
+                  navigate(`/profile/${userId}?edit=true`);
+                  setShowProfile(false);
+                }}
+              >
+                Edit Profile
+              </button>
+              {user.role === 'admin' && (
+                <button 
+                  className="user-profile__menu-item"
+                  onClick={() => {
+                    navigate('/admin');
+                    setShowProfile(false);
+                  }}
+                >
+                  Admin Dashboard
+                </button>
+              )}
+              <button 
+                className="user-profile__menu-item user-profile__menu-item--logout"
+                onClick={() => {
+                  setShowProfile(false);
+                  if (onLogout) onLogout();
+                }}
+              >
+                Logout
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

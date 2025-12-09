@@ -12,6 +12,8 @@ import FeedPage from "./pages/Feed/Feed";
 import SinglePostPage from "./pages/Feed/SinglePost/SinglePost";
 import LoginPage from "./pages/Auth/Login";
 import SignupPage from "./pages/Auth/Signup";
+import ProfilePage from "./pages/Profile/Profile";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
 
 import "./App.css";
 
@@ -218,6 +220,16 @@ const App = () => {
       <Route
         path="/post/:postId"
         element={<SinglePostPage userId={userId} token={token} />}
+      />
+
+      <Route
+        path="/profile/:userId?"
+        element={<ProfilePage token={token} currentUserId={userId} />}
+      />
+
+      <Route
+        path="/admin"
+        element={<AdminDashboard token={token} currentUserId={userId} />}
       />
 
       <Route path="*" element={<Navigate to="/" replace />} />

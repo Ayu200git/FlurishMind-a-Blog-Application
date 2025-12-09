@@ -46,10 +46,42 @@
   min-width: 80px;
 }
 
-@media (min-width: 768px) {
+/* Tablet styles */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .modal {
+    width: 45rem;
+    max-width: 85%;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
   .modal {
     width: 40rem;
     max-width: 600px;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 767px) {
+  .modal {
+    width: 95%;
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal__header h1 {
+    font-size: 1.25rem;
+  }
+
+  .modal__actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal__actions button {
+    width: 100%;
+    margin: 0;
   }
 }
 

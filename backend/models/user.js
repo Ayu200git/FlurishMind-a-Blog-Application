@@ -14,9 +14,26 @@ const userSchema = new Schema({
     type: String,
     required: true
   },
+  username: {
+    type: String,
+    default: ''
+  },
+  bio: {
+    type: String,
+    default: ''
+  },
   status: {
     type: String,
     default: 'I am new!'
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  avatar: {
+    type: String,
+    default: ''
   },
   posts: [
     {

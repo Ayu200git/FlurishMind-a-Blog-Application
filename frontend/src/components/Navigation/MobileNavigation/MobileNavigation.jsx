@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
-import ThemeToggle from '../../ThemeToggle/ThemeToggle';
-import UserProfile from '../../UserProfile/UserProfile';
 import './MobileNavigation.css';
 
 // NavigationItems component inside this file
@@ -42,7 +40,6 @@ const NavigationItems = ({ isAuth, onChoose, onLogout, onNewPost, onEdit }) => {
   );
 };
 
-// Hamburger toggle component inside this file
 const MobileToggle = ({ onOpen }) => (
   <button className="mobile-toggle" onClick={onOpen}>
     <span className="mobile-toggle__bar" />
@@ -51,45 +48,21 @@ const MobileToggle = ({ onOpen }) => (
   </button>
 );
 
-// Full MobileNavigation component
-const MobileNavigation = ({ isAuth, onLogout, onNewPost, onEdit, token, userId }) => {
-  const [open, setOpen] = useState(false);
-
-  const toggleSidebar = () => setOpen(prev => !prev);
-  const closeSidebar = () => setOpen(false);
-
+const MobileNavigation = ({ open, mobile, onChooseItem, onLogout, onNewPost, onEdit, isAuth }) => {
   return (
     <>
-      {/* Top navbar with user profile and theme toggle */}
-      <nav className="main-nav">
-        <MobileToggle onOpen={toggleSidebar} />
-        <div className="spacer" />
-        <ul className="main-nav__items main-nav__items--desktop">
-          <li>
-            <ThemeToggle />
-          </li>
-          {isAuth && userId && token && (
-            <li>
-              <UserProfile token={token} userId={userId} />
-            </li>
-          )}
-        </ul>
-      </nav>
-
-      {/* Sidebar */}
       <nav className={`mobile-nav ${open ? 'open' : ''}`}>
-        <ul className="mobile-nav__items">
+        <ul className="mobile-nav__items mobile">
           <NavigationItems
             isAuth={isAuth}
-            onChoose={closeSidebar}
+            onChoose={onChooseItem}
             onLogout={onLogout}
             onNewPost={onNewPost}
             onEdit={onEdit}
           />
         </ul>
-        {/* Overlay to close sidebar */}
-        {open && <div className="mobile-nav__backdrop" onClick={closeSidebar}></div>}
       </nav>
+      {open && <div className="mobile-nav__backdrop" onClick={onChooseItem}></div>}
     </>
   );
 };

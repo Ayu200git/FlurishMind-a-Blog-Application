@@ -8,7 +8,6 @@ const Comment = require('../models/comment');
 const { clearImage } = require('../util/file');
 
 module.exports = {
-  // ===================== USER =====================
   createUser: async function ({ userInput }) {
     const errors = [];
     if (!validator.isEmail(userInput.email)) errors.push({ message: 'E-Mail is invalid.' });
@@ -78,6 +77,57 @@ module.exports = {
     if (!user) throw new Error('No user found!');
     user.status = status;
     await user.save();
+    return { ...user._doc, _id: user._id.toString() };
+  },
+  updateUser: async function({ userInput }, context) {
+    if (!context || !context.isAuth) {
+      const error = new Error('Not authenticated!');
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(context.userId);
+    if (!user) {
+      const error = new Error('User not found!');
+      error.code = 404;
+      throw error;
+    }
+    
+    if (userInput.name) user.name = userInput.name;
+    if (userInput.username !== undefined) user.username = userInput.username;
+    if (userInput.bio !== undefined) user.bio = userInput.bio;
+    if (userInput.status) user.status = userInput.status;
+    if (userInput.avatar !== undefined) user.avatar = userInput.avatar;
+    
+    await user.save();
+    return { ...user._doc, _id: user._id.toString() };
+  },
+  users: async function(args, context) {
+    if (!context || !context.isAuth) {
+      const error = new Error('Not authenticated!');
+      error.code = 401;
+      throw error;
+    }
+    const currentUser = await User.findById(context.userId);
+    if (!currentUser || currentUser.role !== 'admin') {
+      const error = new Error('Not authorized! Admin access required.');
+      error.code = 403;
+      throw error;
+    }
+    const users = await User.find().select('-password');
+    return users.map(u => ({ ...u._doc, _id: u._id.toString() }));
+  },
+  userById: async function({ userId }, context) {
+    if (!context || !context.isAuth) {
+      const error = new Error('Not authenticated!');
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      const error = new Error('User not found!');
+      error.code = 404;
+      throw error;
+    }
     return { ...user._doc, _id: user._id.toString() };
   },
 
@@ -299,6 +349,42 @@ module.exports = {
 
 
 
+  updateComment: async function({ commentId, content }, context) {
+    if (!context || !context.isAuth) {
+      const error = new Error('Not authenticated!');
+      error.code = 401;
+      throw error;
+    }
+
+    if (!content || content.trim().length === 0) {
+      const error = new Error('Comment cannot be empty!');
+      error.code = 422;
+      throw error;
+    }
+
+    const comment = await Comment.findById(commentId).populate('creator');
+    if (!comment) {
+      const error = new Error('Comment not found!');
+      error.code = 404;
+      throw error;
+    }
+
+    if (comment.creator._id.toString() !== context.userId.toString()) {
+      const error = new Error('Not authorized!');
+      error.code = 403;
+      throw error;
+    }
+
+    comment.content = content.trim();
+    await comment.save();
+    await comment.populate('creator');
+
+    return {
+      ...comment._doc,
+      _id: comment._id.toString(),
+      createdAt: comment.createdAt.toISOString()
+    };
+  },
   deleteComment: async function ({ commentId }, context) {
     if (!context?.isAuth) throw new Error('Not authenticated!');
 
@@ -310,7 +396,6 @@ module.exports = {
     return true;
   },
 
-  // ===================== LIKE / UNLIKE =====================
   likePost: async function ({ postId }, context) {
     if (!context?.isAuth) throw new Error('Not authenticated!');
     const post = await Post.findById(postId);

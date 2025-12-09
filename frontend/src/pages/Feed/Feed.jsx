@@ -25,7 +25,6 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
 
   const catchError = (err) => setError(err.message || 'Something went wrong!');
 
-  // Fetch user status
   useEffect(() => {
     if (!authToken || viewOnly) return;
 
@@ -60,11 +59,9 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
     };
 
     fetchStatus();
-    loadPosts(); // load first page
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadPosts(); 
   }, [authToken, viewOnly]);
 
-  // Load posts
   const loadPosts = useCallback(
     async (direction) => {
       setPostsLoading(true);
@@ -134,7 +131,6 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
     [postPage, authToken]
   );
 
-  // Update status
   const statusUpdateHandler = async (event) => {
     event.preventDefault();
 
@@ -173,7 +169,6 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
     setIsEditing(true);
   };
 
-  // Expose handlers to parent via refs
   useEffect(() => {
     if (onNewPostRef && onNewPostRef.current !== undefined) {
       onNewPostRef.current = newPostHandler;
@@ -198,7 +193,6 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
     setEditPost(null);
   };
 
-  // Create or edit post
   const finishEditHandler = async (postData) => {
     setEditLoading(true);
     setError(null);
@@ -320,7 +314,6 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
 
   const statusInputChangeHandler = (input, value) => setStatus(value);
 
-  // Delete post
   const deletePostHandler = async (postId) => {
     setPostsLoading(true);
     setError(null);
@@ -369,7 +362,6 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
   const errorHandler = () => setError(null);
   const flashHandler = () => setFlashMessage(null);
 
-  // Like / Unlike Post
   const handleLike = async (postId) => {
     if (!authToken) {
       setFlashMessage({ message: 'Please login to like posts', type: 'error' });
@@ -419,6 +411,134 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
     } catch (err) {
       console.error(err);
       setFlashMessage({ message: err.message || 'Failed to like/unlike post', type: 'error' });
+    }
+  };
+
+  // Handle add comment
+  const handleAddComment = async (postId, content) => {
+    if (!authToken) {
+      setFlashMessage({ message: 'Please login to comment', type: 'error' });
+      return;
+    }
+
+    try {
+      const graphqlQuery = {
+        query: `
+          mutation AddComment($content: String!, $postId: ID!) {
+            addComment(commentInput: { content: $content, postId: $postId }) {
+              _id
+              content
+              creator {
+                _id
+                name
+              }
+              createdAt
+            }
+          }
+        `,
+        variables: { content, postId },
+      };
+
+      const res = await fetch('http://localhost:8080/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + authToken,
+        },
+        body: JSON.stringify(graphqlQuery),
+      });
+
+      const resData = await res.json();
+      if (resData.errors) throw new Error(resData.errors[0].message);
+
+      // Reload posts to get updated comments
+      loadPosts();
+      setFlashMessage({ message: 'Comment added successfully!', type: 'success' });
+    } catch (err) {
+      console.error(err);
+      setFlashMessage({ message: err.message || 'Failed to add comment', type: 'error' });
+    }
+  };
+
+  // Handle edit comment
+  const handleEditComment = async (commentId, content) => {
+    if (!authToken) {
+      setFlashMessage({ message: 'Please login to edit comments', type: 'error' });
+      return;
+    }
+
+    try {
+      const graphqlQuery = {
+        query: `
+          mutation UpdateComment($commentId: ID!, $content: String!) {
+            updateComment(commentId: $commentId, content: $content) {
+              _id
+              content
+              creator {
+                _id
+                name
+              }
+              createdAt
+            }
+          }
+        `,
+        variables: { commentId, content },
+      };
+
+      const res = await fetch('http://localhost:8080/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + authToken,
+        },
+        body: JSON.stringify(graphqlQuery),
+      });
+
+      const resData = await res.json();
+      if (resData.errors) throw new Error(resData.errors[0].message);
+
+      loadPosts();
+      setFlashMessage({ message: 'Comment updated successfully!', type: 'success' });
+    } catch (err) {
+      console.error(err);
+      setFlashMessage({ message: err.message || 'Failed to update comment', type: 'error' });
+    }
+  };
+
+  // Handle delete comment
+  const handleDeleteComment = async (commentId) => {
+    if (!authToken) {
+      setFlashMessage({ message: 'Please login to delete comments', type: 'error' });
+      return;
+    }
+
+    try {
+      const graphqlQuery = {
+        query: `
+          mutation DeleteComment($commentId: ID!) {
+            deleteComment(commentId: $commentId)
+          }
+        `,
+        variables: { commentId },
+      };
+
+      const res = await fetch('http://localhost:8080/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + authToken,
+        },
+        body: JSON.stringify(graphqlQuery),
+      });
+
+      const resData = await res.json();
+      if (resData.errors) throw new Error(resData.errors[0].message);
+
+      loadPosts();
+      setFlashMessage({ message: 'Comment deleted successfully!', type: 'success' });
+    } catch (err) {
+      console.error(err);
+      setFlashMessage({ message: err.message || 'Failed to delete comment', type: 'error' });
     }
   };
 
@@ -486,9 +606,13 @@ const Feed = ({ userId, token, viewOnly = false, onNewPostRef, onEditRef }) => {
                   creatorId={post.creator?._id}
                   likes={post.likes || []}
                   likesCount={post.likesCount || 0}
-                  comments={post.commentsCount || 0}
-                  onLike={!isCreator && userId ? () => handleLike(post._id) : null}
-                  onComment={null} // handled in SinglePost page
+                  comments={post.comments || []}
+                  commentsCount={post.commentsCount || 0}
+                  onLike={userId ? () => handleLike(post._id) : null}
+                  onAddComment={handleAddComment}
+                  onEditComment={handleEditComment}
+                  onDeleteComment={handleDeleteComment}
+                  token={authToken}
                 />
               );
             })}

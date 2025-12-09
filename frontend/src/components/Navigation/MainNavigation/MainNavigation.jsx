@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 
 import MobileToggle from '../MobileToggle/MobileToggle';
 import Logo from '../../Logo/Logo';
@@ -13,26 +13,42 @@ const MainNavigation = ({ onOpenMobileNav, isAuth, onLogout, onNewPost, onEdit, 
   <nav className="main-nav">
     <MobileToggle onOpen={onOpenMobileNav} />
     <div className="main-nav__logo">
-      <NavLink to="/">
-        <Logo />
+       <NavLink to="/">
+        <img 
+          src="flurishmindlogo.png" 
+          alt="Logo" 
+          className="main-nav__logo-img"
+        />
       </NavLink>
     </div>
     <div className="spacer" />
-    <ul className="main-nav__items">
-      <li>
-        <ThemeToggle />
-      </li>
+    
+    {/* Mobile/Tablet: Show only essential items */}
+    <div className="main-nav__mobile-items">
       {isAuth && userId && token && (
-        <li>
-          <UserProfile token={token} userId={userId} />
-        </li>
+        <UserProfile token={token} userId={userId} onLogout={onLogout} />
       )}
+      <ThemeToggle />
+    </div>
+
+    {/* Desktop: Show full navigation */}
+    <ul className="main-nav__items">
       <NavigationItems 
         isAuth={isAuth} 
         onLogout={onLogout}
         onNewPost={onNewPost}
         onEdit={onEdit}
       />
+
+      {isAuth && userId && token && (
+        <li>
+          <UserProfile token={token} userId={userId} onLogout={onLogout} />
+        </li>
+      )}
+
+      <li>
+        <ThemeToggle />
+      </li>
     </ul>
   </nav>
 );

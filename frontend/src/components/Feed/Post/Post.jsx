@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import Button from '../../Button/Button';
 import Image from '../../Image/Image';
+import Comments from '../../Comments/Comments';
 import './Post.css';
 
 const Post = ({
   author,
-  authorImage, // <-- corrected spelling
+  authorImage,
   date,
   title,
   id,
@@ -17,9 +18,13 @@ const Post = ({
   creatorId,
   likes = [],
   likesCount = 0,
-  comments = 0,
+  comments = [],
+  commentsCount = 0,
   onLike,
-  onComment
+  onAddComment,
+  onEditComment,
+  onDeleteComment,
+  token
 }) => {
   const isCreator = currentUserId && creatorId && currentUserId === creatorId;
   const isLiked =
@@ -27,7 +32,6 @@ const Post = ({
     likes &&
     likes.some(like => like._id?.toString() === currentUserId?.toString());
 
-  // Construct full image URL if it's a relative path
   const imageUrl = image
     ? image.startsWith('http') ? image : `http://localhost:8080/${image}`
     : null;
@@ -86,19 +90,22 @@ const Post = ({
                 {isLiked ? '❤️ Liked' : '🤍 Like'} ({likesCount || 0})
               </Button>
             )}
-
-            {onComment ? (
-              <Button mode="flat" onClick={() => onComment(id)}>
-                💬 Comment ({comments})
-              </Button>
-            ) : (
-              <Button mode="flat" link={`/post/${id}`}>
-                💬 Comment ({comments})
-              </Button>
-            )}
           </>
         )}
       </div>
+
+      {/* Comments Section */}
+      {token && (
+        <Comments
+          comments={comments}
+          postId={id}
+          currentUserId={currentUserId}
+          token={token}
+          onAddComment={onAddComment}
+          onEditComment={onEditComment}
+          onDeleteComment={onDeleteComment}
+        />
+      )}
     </article>
   );
 };
