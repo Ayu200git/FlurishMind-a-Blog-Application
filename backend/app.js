@@ -1,9 +1,11 @@
+require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const graphqlHttp = require('express-graphql');
+ 
 
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
@@ -11,6 +13,8 @@ const auth = require('./middleware/auth');
 const { clearImage } = require('./util/file');
 
 const app = express();
+
+const Mongo_URI = process.env.MONGO_URI;
 
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'images'),
@@ -26,7 +30,6 @@ app.use(bodyParser.json());
 app.use(multer({ storage: fileStorage, fileFilter }).single('image'));
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-// CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*'); 
   res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE'); 
@@ -35,20 +38,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Image upload route
 app.put('/post-image', auth, (req, res, next) => {
   if (!req.isAuth) return res.status(401).json({ message: 'Not authenticated!' });
   if (!req.file) return res.status(200).json({ message: 'No file provided!' });
   if (req.body.oldPath) clearImage(req.body.oldPath);
-  // Return path relative to the images directory for frontend access
-  const filePath = req.file.path.replace(/\\/g, '/'); // Normalize path separators
+  const filePath = req.file.path.replace(/\\/g, '/');
   const relativePath = filePath.includes('images') 
     ? filePath.substring(filePath.indexOf('images'))
     : 'images/' + req.file.filename;
   res.status(201).json({ message: 'File stored.', filePath: relativePath });
 });
-
-// GraphQL endpoint
+ 
 app.use(
   '/graphql',
   auth,
@@ -67,7 +67,6 @@ app.use(
   }))
 );
 
-// Error handling
 app.use((error, req, res, next) => {
   console.error(error);
   const status = error.statusCode || 500;
@@ -76,12 +75,8 @@ app.use((error, req, res, next) => {
   res.status(status).json({ message, data });
 });
 
-// MongoDB connection
 mongoose
-  .connect('mongodb+srv://ayushks2805_db_user:ayushatlas22@cluster0.johjjlr.mongodb.net/?appName=Cluster0', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
+  .connect(Mongo_URI)
   .then(() => {
     console.log('MongoDB connected');
     app.listen(8080, () => console.log('Server running on port 8080'));

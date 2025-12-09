@@ -23,7 +23,6 @@ const MainNavigation = ({ onOpenMobileNav, isAuth, onLogout, onNewPost, onEdit, 
     </div>
     <div className="spacer" />
     
-    {/* Mobile/Tablet: Show only essential items */}
     <div className="main-nav__mobile-items">
       {isAuth && userId && token && (
         <UserProfile token={token} userId={userId} onLogout={onLogout} />
@@ -31,7 +30,6 @@ const MainNavigation = ({ onOpenMobileNav, isAuth, onLogout, onNewPost, onEdit, 
       <ThemeToggle />
     </div>
 
-    {/* Desktop: Show full navigation */}
     <ul className="main-nav__items">
       <NavigationItems 
         isAuth={isAuth} 

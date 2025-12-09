@@ -16,10 +16,15 @@ const commentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true
+    },
+     
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Comment',
+      default: null
     }
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model('Comment', commentSchema);
-

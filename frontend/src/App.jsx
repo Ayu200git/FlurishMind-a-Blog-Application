@@ -27,7 +27,6 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Check localStorage for token
   useEffect(() => {
     const token = localStorage.getItem("token");
     const expiryDate = localStorage.getItem("expiryDate");
@@ -61,7 +60,6 @@ const App = () => {
 
   const setAutoLogout = (ms) => setTimeout(logoutHandler, ms);
 
-  // LOGIN
   const loginHandler = async (event, authData) => {
     event.preventDefault();
     setAuthLoading(true);
@@ -118,7 +116,6 @@ const App = () => {
     }
   };
 
-  // SIGNUP
   const signupHandler = async (event, authData) => {
     event.preventDefault();
     setAuthLoading(true);
@@ -162,7 +159,6 @@ const App = () => {
     }
   };
 
-  // Mobile nav
   const mobileNavHandler = (isOpen) => {
     setShowMobileNav(isOpen);
     setShowBackdrop(isOpen);
@@ -187,7 +183,10 @@ const App = () => {
     editHandlerRef.current();
   }, []);
 
-  // ROUTES FIXED HERE
+  const adminHandler = () => {
+  navigate("/admin");
+  };
+
   const authRoutes = (
     <Routes>
       <Route
@@ -199,7 +198,10 @@ const App = () => {
         element={<SignupPage onSignup={signupHandler} loading={authLoading} />}
       />
       <Route path="*" element={<Navigate to="/login" replace />} />
+
     </Routes>
+
+    
   );
 
   const protectedRoutes = (
@@ -216,7 +218,6 @@ const App = () => {
         }
       />
 
-      {/* FIXED POST ROUTE */}
       <Route
         path="/post/:postId"
         element={<SinglePostPage userId={userId} token={token} />}
@@ -227,13 +228,14 @@ const App = () => {
         element={<ProfilePage token={token} currentUserId={userId} />}
       />
 
-      <Route
+       <Route
         path="/admin"
         element={<AdminDashboard token={token} currentUserId={userId} />}
       />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+
   );
 
   return (
@@ -250,6 +252,7 @@ const App = () => {
               isAuth={isAuth}
               onNewPost={handleNewPost}
               onEdit={handleEdit}
+              onAdmin={adminHandler}
               userId={userId}
               token={token}
             />
@@ -264,11 +267,11 @@ const App = () => {
             isAuth={isAuth}
             onNewPost={handleNewPost}
             onEdit={handleEdit}
+            onAdmin={adminHandler}
           />
         }
       />
 
-      {/* CHECK AUTH */}
       {isAuth ? protectedRoutes : authRoutes}
     </Fragment>
   );

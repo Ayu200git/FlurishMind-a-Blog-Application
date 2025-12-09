@@ -18,18 +18,39 @@ module.exports = buildSchema(`
     type Comment {
         _id: ID!
         content: String!
-        creator: User
+        parentId: ID
+        creator: User!
         post: Post!
+        createdAt: String!
+        replies: [Comment!]!
+    }
+
+    type PaginatedComments {
+        comments: [Comment!]!
+        totalComments: Int!
+        hasMore: Boolean!
+    }
+
+    type PaginatedReplies {
+        replies: [Comment!]!
+        totalReplies: Int!
+        hasMore: Boolean!
+    }
+
+    type Reply {
+        _id: ID!
+        content: String!
+        creator: User!
         createdAt: String!
     }
 
     type User {
         _id: ID!
         name: String!
-        username: String!
+        username: String
         email: String!
         password: String
-        bio: String!
+        bio: String
         status: String!
         role: String!
         avatar: String
@@ -61,6 +82,7 @@ module.exports = buildSchema(`
     input CommentInputData {
         content: String!
         postId: ID!
+        parentId: ID
     }
 
     input UpdateUserInput {
@@ -78,10 +100,14 @@ module.exports = buildSchema(`
         user: User!
         users: [User!]!
         userById(userId: ID!): User!
+        comments(postId: ID!, page: Int, limit: Int): PaginatedComments!
+        replies(commentId: ID!): [Comment!]!
+        paginatedComments(postId: ID!, page: Int, limit: Int): PaginatedComments!
+        paginatedReplies(commentId: ID!, page: Int, limit: Int): PaginatedReplies!
     }
 
     type RootMutation {
-        createUser(userInput: UserInputData!): User!   # userInput marked non-nullable
+        createUser(userInput: UserInputData!): User!
         createPost(postInput: PostInputData!): Post!
         updatePost(id: ID!, postInput: PostInputData!): Post!
         deletePost(id: ID!): Boolean
@@ -94,6 +120,7 @@ module.exports = buildSchema(`
         deleteComment(commentId: ID!): Boolean
         deleteUser(userId: ID!): Boolean
         makeAdmin(userId: ID!): User!
+        addReply(postId: ID!, commentId: ID!, content: String!): Reply
     }
 
     schema {

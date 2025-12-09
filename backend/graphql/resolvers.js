@@ -7,6 +7,58 @@ const Post = require('../models/post');
 const Comment = require('../models/comment');
 const { clearImage } = require('../util/file');
 
+async function getRepliesRecursive(parentId) {
+  const replies = await Comment.find({ parentId })
+    .sort({ createdAt: -1 })
+    .populate('creator', 'name email avatar');
+
+  return Promise.all(replies.map(async r => {
+    if (!r.creator) {
+      console.error('Creator not found for reply:', r._id);
+      throw new Error('Comment creator not found');
+    }
+    return {
+      ...r._doc,
+      _id: r._id.toString(),
+      createdAt: r.createdAt.toISOString(),
+      creator: { 
+        _id: r.creator._id.toString(), 
+        name: r.creator.name, 
+        email: r.creator.email, 
+        avatar: r.creator.avatar || '' 
+      },
+      parentId: r.parentId ? r.parentId.toString() : null,
+      replies: await getRepliesRecursive(r._id)
+    };
+  }));
+}
+
+async function getNestedComments(postId) {
+  const topComments = await Comment.find({ post: postId, parentId: null })
+    .sort({ createdAt: -1 })
+    .populate('creator', 'name email avatar');
+
+  return Promise.all(topComments.map(async c => {
+    if (!c.creator) {
+      console.error('Creator not found for comment:', c._id);
+      throw new Error('Comment creator not found');
+    }
+    return {
+      ...c._doc,
+      _id: c._id.toString(),
+      createdAt: c.createdAt.toISOString(),
+      creator: { 
+        _id: c.creator._id.toString(), 
+        name: c.creator.name, 
+        email: c.creator.email, 
+        avatar: c.creator.avatar || '' 
+      },
+      parentId: null,
+      replies: await getRepliesRecursive(c._id)
+    };
+  }));
+}
+
 module.exports = {
   createUser: async function ({ userInput }) {
     const errors = [];
@@ -79,62 +131,39 @@ module.exports = {
     await user.save();
     return { ...user._doc, _id: user._id.toString() };
   },
+
   updateUser: async function({ userInput }, context) {
-    if (!context || !context.isAuth) {
-      const error = new Error('Not authenticated!');
-      error.code = 401;
-      throw error;
-    }
+    if (!context || !context.isAuth) throw new Error('Not authenticated!');
     const user = await User.findById(context.userId);
-    if (!user) {
-      const error = new Error('User not found!');
-      error.code = 404;
-      throw error;
-    }
-    
+    if (!user) throw new Error('User not found!');
+
     if (userInput.name) user.name = userInput.name;
     if (userInput.username !== undefined) user.username = userInput.username;
     if (userInput.bio !== undefined) user.bio = userInput.bio;
     if (userInput.status) user.status = userInput.status;
     if (userInput.avatar !== undefined) user.avatar = userInput.avatar;
-    
+
     await user.save();
     return { ...user._doc, _id: user._id.toString() };
   },
+
   users: async function(args, context) {
-    if (!context || !context.isAuth) {
-      const error = new Error('Not authenticated!');
-      error.code = 401;
-      throw error;
-    }
+    if (!context?.isAuth) throw new Error('Not authenticated!');
     const currentUser = await User.findById(context.userId);
-    if (!currentUser || currentUser.role !== 'admin') {
-      const error = new Error('Not authorized! Admin access required.');
-      error.code = 403;
-      throw error;
-    }
+    if (!currentUser || currentUser.role !== 'admin') throw new Error('Not authorized! Admin access required.');
     const users = await User.find().select('-password');
     return users.map(u => ({ ...u._doc, _id: u._id.toString() }));
   },
+
   userById: async function({ userId }, context) {
-    if (!context || !context.isAuth) {
-      const error = new Error('Not authenticated!');
-      error.code = 401;
-      throw error;
-    }
+    if (!context?.isAuth) throw new Error('Not authenticated!');
     const user = await User.findById(userId).select('-password');
-    if (!user) {
-      const error = new Error('User not found!');
-      error.code = 404;
-      throw error;
-    }
+    if (!user) throw new Error('User not found!');
     return { ...user._doc, _id: user._id.toString() };
   },
 
-  // ===================== POSTS =====================
   createPost: async function ({ postInput }, context) {
     if (!context?.isAuth) throw new Error('Not authenticated!');
-
     const errors = [];
     if (!postInput.title || !validator.isLength(postInput.title, { min: 5 })) errors.push({ message: 'Title is invalid.' });
     if (!postInput.content || !validator.isLength(postInput.content, { min: 5 })) errors.push({ message: 'Content is invalid.' });
@@ -156,8 +185,10 @@ module.exports = {
     });
 
     const createdPost = await post.save();
-    user.posts.push(createdPost);
-    await user.save();
+    if (user.posts && Array.isArray(user.posts)) {
+      user.posts.push(createdPost);
+      await user.save();
+    }
 
     return {
       ...createdPost._doc,
@@ -170,11 +201,9 @@ module.exports = {
     };
   },
 
-  posts: async function ({ page }, context) {
+  posts: async function ({ page = 1 }, context) {
     if (!context?.isAuth) throw new Error('Not authenticated!');
-    if (!page) page = 1;
     const perPage = 2;
-
     const totalPosts = await Post.countDocuments();
 
     const posts = await Post.find()
@@ -186,10 +215,7 @@ module.exports = {
 
     const postsWithComments = await Promise.all(
       posts.map(async (p) => {
-        const comments = await Comment.find({ post: p._id })
-          .populate('creator', 'name email')
-          .sort({ createdAt: -1 });
-
+        const comments = await getNestedComments(p._id);
         return { post: p, comments };
       })
     );
@@ -200,16 +226,9 @@ module.exports = {
         _id: post._id.toString(),
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString(),
-        likesCount: post.likes.length,
+        likesCount: post.likes ? post.likes.length : 0,
         commentsCount: comments.length,
-        comments: comments.map(c => ({
-          ...c._doc,
-          _id: c._id.toString(),
-          createdAt: c.createdAt.toISOString(),
-          creator: c.creator
-            ? { _id: c.creator._id.toString(), name: c.creator.name, email: c.creator.email }
-            : { _id: '0', name: 'Unknown', email: '' }
-        }))
+        comments
       })),
       totalPosts
     };
@@ -222,192 +241,194 @@ module.exports = {
       .populate('likes', 'name _id');
     if (!post) throw new Error('No post found!');
 
-    const comments = await Comment.find({ post: id })
-      .populate('creator', 'name email')
-      .sort({ createdAt: -1 });
+    const comments = await getNestedComments(id);
 
     return {
       ...post._doc,
       _id: post._id.toString(),
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),
-      likesCount: post.likes.length,
+      likesCount: post.likes ? post.likes.length : 0,
       commentsCount: comments.length,
-      comments: comments.map(c => ({
-        ...c._doc,
-        _id: c._id.toString(),
-        createdAt: c.createdAt.toISOString(),
-        creator: c.creator
-          ? { _id: c.creator._id.toString(), name: c.creator.name, email: c.creator.email }
-          : { _id: '0', name: 'Unknown', email: '' }
-      }))
+      comments
     };
   },
 
-  updatePost: async function ({ id, postInput }, context) {
-    if (!context?.isAuth) throw new Error('Not authenticated!');
-    const post = await Post.findById(id).populate('creator');
-    if (!post) throw new Error('No post found!');
-    if (post.creator._id.toString() !== context.userId) throw new Error('Not authorized!');
-
-    const errors = [];
-    if (!postInput.title || !validator.isLength(postInput.title, { min: 5 })) errors.push({ message: 'Title is invalid.' });
-    if (!postInput.content || !validator.isLength(postInput.content, { min: 5 })) errors.push({ message: 'Content is invalid.' });
-    if (errors.length > 0) {
-      const err = new Error('Invalid input.');
-      err.data = errors;
-      err.code = 422;
-      throw err;
-    }
-
-    post.title = postInput.title;
-    post.content = postInput.content;
-    if (postInput.imageUrl !== 'undefined') post.imageUrl = postInput.imageUrl;
-
-    const updatedPost = await post.save();
-    const comments = await Comment.find({ post: id }).populate('creator', 'name email');
-
-    return {
-      ...updatedPost._doc,
-      _id: updatedPost._id.toString(),
-      createdAt: updatedPost.createdAt.toISOString(),
-      updatedAt: updatedPost.updatedAt.toISOString(),
-      likesCount: post.likes.length,
-      commentsCount: comments.length,
-      comments: comments.map(c => ({
-        ...c._doc,
-        _id: c._id.toString(),
-        createdAt: c.createdAt.toISOString(),
-        creator: c.creator
-          ? { _id: c.creator._id.toString(), name: c.creator.name, email: c.creator.email }
-          : { _id: '0', name: 'Unknown', email: '' }
-      }))
-    };
-  },
-
-  deletePost: async function ({ id }, context) {
-    if (!context?.isAuth) throw new Error('Not authenticated!');
-    const post = await Post.findById(id);
-    if (!post) throw new Error('No post found!');
-    if (post.creator.toString() !== context.userId) throw new Error('Not authorized!');
-
-    clearImage(post.imageUrl);
-    await Post.findByIdAndRemove(id);
-
-    const user = await User.findById(context.userId);
-    user.posts.pull(id);
-    await user.save();
-
-    return true;
-  },
-
-  // ===================== COMMENTS =====================
- addComment: async function ({ commentInput }, context) {
+  addComment: async function ({ commentInput }, context) {
+  // 1️⃣ Authentication check
   if (!context?.isAuth) throw new Error('Not authenticated!');
-  if (!commentInput.content?.trim()) throw new Error('Comment cannot be empty!');
+  if (!commentInput.content || !commentInput.content.trim())
+    throw new Error('Comment cannot be empty!');
 
+  // 2️⃣ Find the post
   const post = await Post.findById(commentInput.postId);
   if (!post) throw new Error('Post not found!');
 
+  // 3️⃣ Find the user
   const user = await User.findById(context.userId);
   if (!user) throw new Error('User not found!');
 
+  // 4️⃣ Create the comment
   const comment = new Comment({
-    content: commentInput.content,
-    post: post._id,
-    creator: user._id
+    content: commentInput.content.trim(),
+    post: commentInput.postId,
+    creator: user._id,
+    parentId: commentInput.parentId || null
   });
 
-  const createdComment = await comment.save();
+  // 5️⃣ Save comment
+  await comment.save();
 
-  await createdComment.populate('creator', 'name email');
+  // 6️⃣ Populate creator with specific fields
+  await comment.populate({
+    path: "creator",
+    select: "name username email avatar role status"
+  });
 
-   return {
-  _id: createdComment._id.toString(),
-  content: createdComment.content,
-  createdAt: createdComment.createdAt.toISOString(),
-  creator: createdComment.creator
-    ? {
-        _id: createdComment.creator._id.toString(),
-        name: createdComment.creator.name || 'Unknown', // fallback if name missing
-        email: createdComment.creator.email || ''
-      }
-    : {
-        _id: '0',
-        name: 'Unknown',
-        email: ''
-      },
-  post: {
-    _id: post._id.toString(),
-    title: post.title
+  // 7️⃣ Safety fallback: ensure name is not null
+  if (!comment.creator || !comment.creator.name) {
+    comment.creator = comment.creator || {};
+    comment.creator.name = "Unknown User";
   }
-};
 
-     
+  // 8️⃣ Return the comment for GraphQL
+  return {
+    ...comment._doc,
+    _id: comment._id.toString(),
+    creator: {
+      _id: comment.creator._id?.toString() || null,
+      name: comment.creator.name,
+      username: comment.creator.username || "",
+      email: comment.creator.email || "",
+      avatar: comment.creator.avatar || "",
+      role: comment.creator.role || "user",
+      status: comment.creator.status || ""
+    },
+    replies: []
+  };
 },
 
 
 
-
   updateComment: async function({ commentId, content }, context) {
-    if (!context || !context.isAuth) {
-      const error = new Error('Not authenticated!');
-      error.code = 401;
-      throw error;
-    }
+    if (!context || !context.isAuth) throw new Error('Not authenticated!');
+    if (!content || content.trim().length === 0) throw new Error('Comment cannot be empty!');
 
-    if (!content || content.trim().length === 0) {
-      const error = new Error('Comment cannot be empty!');
-      error.code = 422;
-      throw error;
-    }
-
-    const comment = await Comment.findById(commentId).populate('creator');
-    if (!comment) {
-      const error = new Error('Comment not found!');
-      error.code = 404;
-      throw error;
-    }
-
-    if (comment.creator._id.toString() !== context.userId.toString()) {
-      const error = new Error('Not authorized!');
-      error.code = 403;
-      throw error;
-    }
+    const comment = await Comment.findById(commentId).populate('creator', 'name _id email avatar');
+    if (!comment) throw new Error('Comment not found!');
+    if (comment.creator._id.toString() !== context.userId.toString()) throw new Error('Not authorized!');
 
     comment.content = content.trim();
     await comment.save();
-    await comment.populate('creator');
+    await comment.populate('creator', 'name _id email avatar');
 
     return {
-      ...comment._doc,
       _id: comment._id.toString(),
-      createdAt: comment.createdAt.toISOString()
+      content: comment.content,
+      createdAt: comment.createdAt.toISOString(),
+      creator: { 
+        _id: comment.creator._id.toString(), 
+        name: comment.creator.name, 
+        email: comment.creator.email,
+        avatar: comment.creator.avatar || ''
+      },
+      parentId: comment.parentId ? comment.parentId.toString() : null,
+      replies: []
     };
   },
+
   deleteComment: async function ({ commentId }, context) {
     if (!context?.isAuth) throw new Error('Not authenticated!');
-
     const comment = await Comment.findById(commentId).populate('creator', 'name _id');
     if (!comment) throw new Error('Comment not found!');
-    if (comment.creator._id.toString() !== context.userId) throw new Error('Not authorized!');
-
+    if (comment.creator._id.toString() !== context.userId.toString()) throw new Error('Not authorized!');
     await Comment.findByIdAndDelete(commentId);
     return true;
   },
 
+  comments: async function ({ postId }, context) {
+    if (!context?.isAuth) throw new Error("Not authenticated!");
+    return await getNestedComments(postId);
+  },
+
+  replies: async function ({ commentId }, context) {
+    if (!context?.isAuth) throw new Error("Not authenticated!");
+    return await getRepliesRecursive(commentId);
+  },
+
+  paginatedComments: async function ({ postId, page = 1, limit = 5 }, context) {
+    if (!context?.isAuth) throw new Error("Not authenticated!");
+    const skip = (page - 1) * limit;
+    
+    const totalComments = await Comment.countDocuments({ post: postId, parentId: null });
+    const topComments = await Comment.find({ post: postId, parentId: null })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('creator', 'name email avatar');
+
+    const comments = await Promise.all(topComments.map(async c => ({
+      ...c._doc,
+      _id: c._id.toString(),
+      createdAt: c.createdAt.toISOString(),
+      creator: { 
+        _id: c.creator._id.toString(), 
+        name: c.creator.name, 
+        email: c.creator.email,
+        avatar: c.creator.avatar 
+      },
+      parentId: null,
+      replies: await getRepliesRecursive(c._id)
+    })));
+
+    return {
+      comments,
+      totalComments,
+      hasMore: skip + limit < totalComments
+    };
+  },
+
+  paginatedReplies: async function ({ commentId, page = 1, limit = 5 }, context) {
+    if (!context?.isAuth) throw new Error("Not authenticated!");
+    const skip = (page - 1) * limit;
+    
+    const totalReplies = await Comment.countDocuments({ parentId: commentId });
+    const replies = await Comment.find({ parentId: commentId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('creator', 'name email avatar');
+
+    return {
+      replies: replies.map(r => ({
+        ...r._doc,
+        _id: r._id.toString(),
+        createdAt: r.createdAt.toISOString(),
+        creator: { 
+          _id: r.creator._id.toString(), 
+          name: r.creator.name, 
+          email: r.creator.email,
+          avatar: r.creator.avatar 
+        },
+        parentId: r.parentId ? r.parentId.toString() : null
+      })),
+      totalReplies,
+      hasMore: skip + limit < totalReplies
+    };
+  },
+
   likePost: async function ({ postId }, context) {
     if (!context?.isAuth) throw new Error('Not authenticated!');
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate('creator', 'name _id');
     if (!post) throw new Error('Post not found!');
 
     const userId = context.userId.toString();
-    if (!post.likes.includes(userId)) {
+    if (!(post.likes || []).some(l => l.toString() === userId)) {
       post.likes.push(userId);
       await post.save();
     }
 
-    const comments = await Comment.find({ post: postId }).populate('creator', 'name email');
+    const comments = await getNestedComments(postId);
     return {
       ...post._doc,
       _id: post._id.toString(),
@@ -415,29 +436,20 @@ module.exports = {
       updatedAt: post.updatedAt.toISOString(),
       likesCount: post.likes.length,
       commentsCount: comments.length,
-      comments: comments.map(c => ({
-        ...c._doc,
-        _id: c._id.toString(),
-        createdAt: c.createdAt.toISOString(),
-        creator: {
-          _id: c.creator._id.toString(),
-          name: c.creator.name,
-          email: c.creator.email
-        }
-      }))
+      comments
     };
   },
 
   unlikePost: async function ({ postId }, context) {
     if (!context?.isAuth) throw new Error('Not authenticated!');
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate('creator', 'name _id');
     if (!post) throw new Error('Post not found!');
 
     const userId = context.userId.toString();
-    post.likes = post.likes.filter(like => like.toString() !== userId);
+    post.likes = (post.likes || []).filter(like => like.toString() !== userId);
     await post.save();
 
-    const comments = await Comment.find({ post: postId }).populate('creator', 'name email');
+    const comments = await getNestedComments(postId);
     return {
       ...post._doc,
       _id: post._id.toString(),
@@ -445,16 +457,7 @@ module.exports = {
       updatedAt: post.updatedAt.toISOString(),
       likesCount: post.likes.length,
       commentsCount: comments.length,
-      comments: comments.map(c => ({
-        ...c._doc,
-        _id: c._id.toString(),
-        createdAt: c.createdAt.toISOString(),
-        creator: {
-          _id: c.creator._id.toString(),
-          name: c.creator.name,
-          email: c.creator.email
-        }
-      }))
+      comments
     };
   }
 };

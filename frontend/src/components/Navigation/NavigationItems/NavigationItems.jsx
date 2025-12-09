@@ -8,7 +8,7 @@ const navItems = [
   { id: 'signup', text: 'Signup', link: '/signup', auth: false }
 ];
 
-const NavigationItems = ({ isAuth, mobile, onChoose, onLogout, onNewPost, onEdit }) => {
+const NavigationItems = ({ isAuth, mobile, onChoose, onLogout, onNewPost, onEdit, onAdmin }) => {
   const filteredItems = navItems
     .filter(item => item.auth === isAuth)
     .map(item => (
@@ -33,6 +33,10 @@ const NavigationItems = ({ isAuth, mobile, onChoose, onLogout, onNewPost, onEdit
           <li className="navigation-item" key="edit">
             <button onClick={onEdit}>Edit</button>
           </li>
+          {/* <li className='navigation-item' key="admin">
+            <button onClick={onAdmin}>Admin</button>
+          </li> */}
+
           <li className="navigation-item" key="logout">
             <button onClick={onLogout}>Logout</button>
           </li>

@@ -24,6 +24,11 @@ const Post = ({
   onAddComment,
   onEditComment,
   onDeleteComment,
+  onLoadMoreComments,
+  onLoadMoreReplies,
+  onAddReply,
+  onEditReply,
+  onDeleteReply,
   token
 }) => {
   const isCreator = currentUserId && creatorId && currentUserId === creatorId;
@@ -94,7 +99,6 @@ const Post = ({
         )}
       </div>
 
-      {/* Comments Section */}
       {token && (
         <Comments
           comments={comments}
@@ -104,6 +108,11 @@ const Post = ({
           onAddComment={onAddComment}
           onEditComment={onEditComment}
           onDeleteComment={onDeleteComment}
+          onLoadMoreComments={onLoadMoreComments}
+          onLoadMoreReplies={onLoadMoreReplies}
+          onAddReply={onAddReply}
+          onEditReply={onEditReply}
+          onDeleteReply={onDeleteReply}
         />
       )}
     </article>

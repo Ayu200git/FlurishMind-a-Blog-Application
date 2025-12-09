@@ -17,7 +17,7 @@ const POST_FORM = {
   },
   image: {
     value: '',
-    valid: true, // Image is optional
+    valid: true, 
     touched: false,
     validators: []
   },
@@ -47,7 +47,6 @@ const FeedEdit = ({ editing, selectedPost, onCancelEdit, onFinishEdit, loading }
         setImagePreview(selectedPost.imageUrl);
       }
     } else if (editing && !selectedPost) {
-      // New post - reset form
       setPostForm(POST_FORM);
       setFormIsValid(false);
       setImagePreview(null);
@@ -59,7 +58,6 @@ const FeedEdit = ({ editing, selectedPost, onCancelEdit, onFinishEdit, loading }
   }, [editing, selectedPost]);
 
   const postInputChangeHandler = (input, value, files) => {
-    // Handle image file upload
     if (input === 'image' && files && files[0]) {
       generateBase64FromImage(files[0])
         .then(b64 => setImagePreview(b64))
@@ -70,7 +68,7 @@ const FeedEdit = ({ editing, selectedPost, onCancelEdit, onFinishEdit, loading }
       let isValid = true;
       
       if (input === 'image') {
-        // Image is optional, always valid
+        
         isValid = true;
       } else {
         isValid = prevForm[input].validators.every(validator => validator(value));
