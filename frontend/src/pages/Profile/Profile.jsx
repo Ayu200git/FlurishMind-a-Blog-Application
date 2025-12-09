@@ -60,7 +60,7 @@ const Profile = ({ token, currentUserId }) => {
       };
 
       try {
-        const res = await fetch('http://localhost:8080/graphql', {
+        const res = await fetch('/api/graphql', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ const Profile = ({ token, currentUserId }) => {
           status: { ...prev.status, value: userData.status || '', valid: true }
         }));
         if (userData.avatar) {
-          setAvatarPreview(userData.avatar.startsWith('http') ? userData.avatar : `http://localhost:8080/${userData.avatar}`);
+          setAvatarPreview(userData.avatar.startsWith('http') ? userData.avatar : `/api/${userData.avatar}`);
         }
         setFormIsValid(true);
         setLoading(false);
@@ -133,7 +133,7 @@ const Profile = ({ token, currentUserId }) => {
           formData.append('oldPath', user.avatar);
         }
 
-        const uploadRes = await fetch('http://localhost:8080/post-image', {
+        const uploadRes = await fetch('/api/post-image', {
           method: 'PUT',
           headers: {
             Authorization: 'Bearer ' + token,
@@ -170,7 +170,7 @@ const Profile = ({ token, currentUserId }) => {
         },
       };
 
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ const Profile = ({ token, currentUserId }) => {
       const updatedUser = resData.data.updateUser;
       setUser(updatedUser);
       if (updatedUser.avatar) {
-        setAvatarPreview(updatedUser.avatar.startsWith('http') ? updatedUser.avatar : `http://localhost:8080/${updatedUser.avatar}`);
+        setAvatarPreview(updatedUser.avatar.startsWith('http') ? updatedUser.avatar : `/api/${updatedUser.avatar}`);
       }
       setAvatarFile(null);
       setEditing(false);
@@ -226,9 +226,9 @@ const Profile = ({ token, currentUserId }) => {
       <div className="profile-header">
         <div className="profile-avatar">
           {avatarPreview ? (
-            <img src={avatarPreview.startsWith('http') ? avatarPreview : `http://localhost:8080/${avatarPreview}`} alt={user.name} />
+            <img src={avatarPreview.startsWith('http') ? avatarPreview : `/api/${avatarPreview}`} alt={user.name} />
           ) : user.avatar ? (
-            <img src={user.avatar.startsWith('http') ? user.avatar : `http://localhost:8080/${user.avatar}`} alt={user.name} />
+            <img src={user.avatar.startsWith('http') ? user.avatar : `/api/${user.avatar}`} alt={user.name} />
           ) : (
             <div className="profile-avatar-placeholder">{initials}</div>
           )}

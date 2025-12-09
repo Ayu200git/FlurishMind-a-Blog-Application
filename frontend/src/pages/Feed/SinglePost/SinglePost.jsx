@@ -48,7 +48,7 @@ const SinglePost = ({ token }) => {
       };
 
       try {
-        const res = await fetch('http://localhost:8080/graphql', {
+        const res = await fetch('/api/graphql', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ const SinglePost = ({ token }) => {
   const errorHandler = () => setError(null);
 
   const imageUrl = post && post.imageUrl
-    ? (post.imageUrl.startsWith('http') ? post.imageUrl : `http://localhost:8080/${post.imageUrl}`)
+    ? (post.imageUrl.startsWith('http') ? post.imageUrl : `/api/${post.imageUrl}`)
     : null;
 
   const handleAddComment = async (postId, content) => {
@@ -98,7 +98,7 @@ const SinglePost = ({ token }) => {
         variables: { content, postId }
       };
 
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ const SinglePost = ({ token }) => {
         variables: { commentId, content }
       };
 
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ const SinglePost = ({ token }) => {
         variables: { commentId }
       };
 
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ const SinglePost = ({ token }) => {
         variables: { content, postId, parentId: commentId }
       };
 
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ const SinglePost = ({ token }) => {
         `,
         variables: { commentId: replyId, content }
       };
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
         body: JSON.stringify(graphqlQuery)
@@ -271,7 +271,7 @@ const SinglePost = ({ token }) => {
         query: `mutation DeleteComment($commentId: ID!) { deleteComment(commentId: $commentId) }`,
         variables: { commentId: replyId }
       };
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
         body: JSON.stringify(graphqlQuery)
@@ -303,7 +303,7 @@ const SinglePost = ({ token }) => {
         variables: { postId, page, limit: 5 }
       };
 
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -344,7 +344,7 @@ const SinglePost = ({ token }) => {
         variables: { commentId, page, limit: 5 }
       };
 
-      const res = await fetch('http://localhost:8080/graphql', {
+      const res = await fetch('/api/graphql', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

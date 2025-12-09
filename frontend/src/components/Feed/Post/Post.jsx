@@ -38,7 +38,7 @@ const Post = ({
     likes.some(like => like._id?.toString() === currentUserId?.toString());
 
   const imageUrl = image
-    ? image.startsWith('http') ? image : `http://localhost:8080/${image}`
+    ? image.startsWith('http') ? image : `/api/${image}`
     : null;
 
   return (
@@ -47,7 +47,7 @@ const Post = ({
         <div className="post__user">
           {authorImage ? (
             <img
-              src={authorImage.startsWith('http') ? authorImage : `http://localhost:8080/${authorImage}`}
+              src={authorImage.startsWith('http') ? authorImage : `/api/${authorImage}`}
               alt={author}
               className="post__user-image"
             />
