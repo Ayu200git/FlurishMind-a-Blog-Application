@@ -285,13 +285,10 @@ module.exports = {
     select: "name username email avatar role status"
   });
 
-  // 7️⃣ Safety fallback: ensure name is not null
   if (!comment.creator || !comment.creator.name) {
     comment.creator = comment.creator || {};
     comment.creator.name = "Unknown User";
   }
-
-  // 8️⃣ Return the comment for GraphQL
   return {
     ...comment._doc,
     _id: comment._id.toString(),
